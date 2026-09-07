@@ -47,7 +47,8 @@ export const SALON_TREATMENTS: SalonTreatment[] = [
     id: "color-signature",
     name: "Color Signature",
     subtitle: "Color + corte + peinado · 2 h",
-    description: "Color Experience Signature: color, corte y peinado. Lavado incluido.",
+    description:
+      "Combinamos color, corte y peinado para lograr un resultado armónico, actual y personalizado, que realce tus facciones y se adapte a tu estilo de vida.",
     category: "Color",
     durationLabel: "2 h",
     durationMinutes: 120,
@@ -73,7 +74,8 @@ export const SALON_TREATMENTS: SalonTreatment[] = [
     id: "balayage-essential",
     name: "Balayage Essential",
     subtitle: "Balayage + terminación · 2 h",
-    description: "Balayage Experience Essential: balayage y terminación. Lavado incluido.",
+    description:
+      "Técnica de iluminación personalizada que aporta luz, dimensión y movimiento al cabello, con un resultado natural y elegante, adaptado a tu tono de piel, tu estilo y la forma de tu rostro. Incluye balayage y terminación.",
     category: "Color",
     durationLabel: "2 h",
     durationMinutes: 120,
@@ -86,7 +88,7 @@ export const SALON_TREATMENTS: SalonTreatment[] = [
     name: "Balayage Signature",
     subtitle: "Balayage + corte + tratamiento + peinado · 2 h 30 min",
     description:
-      "Balayage Experience Signature: balayage, corte, tratamiento y peinado. Lavado incluido.",
+      "Técnica de iluminación personalizada que aporta luz, dimensión y movimiento al cabello, con un resultado natural y elegante, adaptado a tu tono de piel, tu estilo y la forma de tu rostro. Incluye balayage, corte, tratamiento y peinado.",
     category: "Color",
     durationLabel: "2 h 30 min",
     durationMinutes: 150,
@@ -100,7 +102,7 @@ export const SALON_TREATMENTS: SalonTreatment[] = [
     name: "Balayage Premium",
     subtitle: "Balayage personalizado + tratamiento intensivo + corte + peinado · 3 h",
     description:
-      "Balayage Experience Premium: balayage personalizado, tratamiento intensivo, corte y peinado. Lavado incluido.",
+      "Técnica de iluminación personalizada que aporta luz, dimensión y movimiento al cabello, con un resultado natural y elegante, adaptado a tu tono de piel, tu estilo y la forma de tu rostro. Incluye balayage personalizado, tratamiento intensivo, corte y peinado.",
     category: "Color",
     durationLabel: "3 h",
     durationMinutes: 180,
@@ -233,7 +235,8 @@ export const SALON_TREATMENTS: SalonTreatment[] = [
     id: "balayage",
     name: "Balayage",
     subtitle: "2 h",
-    description: "Técnica balayage. Lavado incluido.",
+    description:
+      "Técnica de iluminación personalizada que aporta luz, dimensión y movimiento al cabello, con un resultado natural y elegante, adaptado a tu tono de piel, tu estilo y la forma de tu rostro.",
     category: "Color",
     durationLabel: "2 h",
     durationMinutes: 120,

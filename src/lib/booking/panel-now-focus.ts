@@ -1,7 +1,7 @@
 import { formatInTimeZone } from "date-fns-tz";
 
 import { RESERVATION_TZ, argentinaTodayDateKey } from "@/lib/booking/public-slot-lead";
-import { findSalonTreatmentById } from "@/lib/treatments/catalog";
+import { findCatalogTreatmentById } from "@/lib/treatments/catalog";
 
 export function hhmmToMinutes(hhmm: string): number | null {
   const m = /^(\d{2}):(\d{2})$/.exec(hhmm.trim());
@@ -56,7 +56,7 @@ export function isReservationInProgress(
   if (startM === null) return false;
   const nowM = argentinaNowMinutes(now);
   if (nowM < startM) return false;
-  const t = findSalonTreatmentById(treatmentId);
+  const t = findCatalogTreatmentById(treatmentId);
   const duration = t?.durationMinutes ?? 60;
   return nowM < startM + duration;
 }

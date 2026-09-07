@@ -2,7 +2,7 @@ import type { Db, ObjectId } from "mongodb";
 import { formatInTimeZone } from "date-fns-tz";
 
 import { RESERVATION_TZ } from "@/lib/booking/public-slot-lead";
-import { findSalonTreatmentById } from "@/lib/treatments/catalog";
+import { findCatalogTreatmentById } from "@/lib/treatments/catalog";
 
 const COLLECTION = "reservations";
 const ACTIVE_STATUSES = ["confirmed"] as const;
@@ -52,7 +52,7 @@ export function reservationDurationMinutesFromDoc(r: {
     return r.durationMinutes;
   }
   const tid = String(r.treatmentId ?? "").trim();
-  return findSalonTreatmentById(tid)?.durationMinutes ?? 60;
+  return findCatalogTreatmentById(tid)?.durationMinutes ?? 60;
 }
 
 function durationForReservationRow(r: {

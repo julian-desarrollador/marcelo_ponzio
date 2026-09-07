@@ -34,11 +34,11 @@ export const SALON_TREATMENTS: SalonTreatment[] = [
   {
     id: "color-essential",
     name: "Color Essential",
-    subtitle: "Color + terminación · 1 h",
+    subtitle: "Color + terminación · 1 h 30 min",
     description: "Color Experience Essential: color y terminación. Lavado incluido.",
     category: "Color",
-    durationLabel: "1 h",
-    durationMinutes: 60,
+    durationLabel: "1 h 30 min",
+    durationMinutes: 90,
     imageUrl: IMG.color,
     priceLabel: "$70.000",
     experienceFamily: "color-experience",
@@ -46,11 +46,11 @@ export const SALON_TREATMENTS: SalonTreatment[] = [
   {
     id: "color-signature",
     name: "Color Signature",
-    subtitle: "Color + corte + peinado · 1 h 30 min",
+    subtitle: "Color + corte + peinado · 2 h",
     description: "Color Experience Signature: color, corte y peinado. Lavado incluido.",
     category: "Color",
-    durationLabel: "1 h 30 min",
-    durationMinutes: 90,
+    durationLabel: "2 h",
+    durationMinutes: 120,
     imageUrl: IMG.salon,
     priceLabel: "$95.000",
     badge: "La más elegida",
@@ -59,12 +59,12 @@ export const SALON_TREATMENTS: SalonTreatment[] = [
   {
     id: "color-premium",
     name: "Color Premium",
-    subtitle: "Color + corte + tratamiento + peinado · 2 h",
+    subtitle: "Color + corte + tratamiento + peinado · 2 h 30 min",
     description:
       "Color Experience Premium: color, corte, tratamiento premium y peinado. Lavado incluido.",
     category: "Color",
-    durationLabel: "2 h",
-    durationMinutes: 120,
+    durationLabel: "2 h 30 min",
+    durationMinutes: 150,
     imageUrl: IMG.salon,
     priceLabel: "$115.000",
     experienceFamily: "color-experience",
@@ -84,12 +84,12 @@ export const SALON_TREATMENTS: SalonTreatment[] = [
   {
     id: "balayage-signature",
     name: "Balayage Signature",
-    subtitle: "Balayage + corte + tratamiento + peinado · 3 h",
+    subtitle: "Balayage + corte + tratamiento + peinado · 2 h 30 min",
     description:
       "Balayage Experience Signature: balayage, corte, tratamiento y peinado. Lavado incluido.",
     category: "Color",
-    durationLabel: "3 h",
-    durationMinutes: 180,
+    durationLabel: "2 h 30 min",
+    durationMinutes: 150,
     imageUrl: IMG.mechas,
     priceLabel: "$185.000",
     badge: "La más elegida",
@@ -98,12 +98,12 @@ export const SALON_TREATMENTS: SalonTreatment[] = [
   {
     id: "balayage-premium",
     name: "Balayage Premium",
-    subtitle: "Balayage personalizado + tratamiento intensivo + corte + peinado · 3 h 30 min",
+    subtitle: "Balayage personalizado + tratamiento intensivo + corte + peinado · 3 h",
     description:
       "Balayage Experience Premium: balayage personalizado, tratamiento intensivo, corte y peinado. Lavado incluido.",
     category: "Color",
-    durationLabel: "3 h 30 min",
-    durationMinutes: 210,
+    durationLabel: "3 h",
+    durationMinutes: 180,
     imageUrl: IMG.mechas,
     priceLabel: "$215.000",
     experienceFamily: "balayage-experience",
@@ -113,7 +113,7 @@ export const SALON_TREATMENTS: SalonTreatment[] = [
     name: "Servicio completo",
     subtitle: "Color, lavado, corte y peinado · 1 h 30 min",
     description:
-      "Incluye color, lavado, corte y peinado. En todos los servicios el lavado está incluido.",
+      "Incluye color, lavado, corte y peinado. En todos los servicios el lavado está incluido. Reemplazado por Color Signature en altas nuevas.",
     category: "Color",
     durationLabel: "1 h 30 min",
     durationMinutes: 90,
@@ -334,20 +334,31 @@ export const SALON_TREATMENTS: SalonTreatment[] = [
   },
 ];
 
-export function findSalonTreatmentByName(name: string): SalonTreatment | undefined {
+export function findCatalogTreatmentById(id: string): SalonTreatment | undefined {
+  return SALON_TREATMENTS.find((x) => x.id === id);
+}
+
+export function findCatalogTreatmentByName(name: string): SalonTreatment | undefined {
   const t = name.trim();
-  return SALON_TREATMENTS.find((x) => x.name === t && isOfferedTreatmentId(x.id));
+  return SALON_TREATMENTS.find((x) => x.name === t);
+}
+
+/** Solo servicios que se ofrecen para turnos nuevos. */
+export function findSalonTreatmentByName(name: string): SalonTreatment | undefined {
+  const t = findCatalogTreatmentByName(name);
+  if (!t || !isOfferedTreatmentId(t.id)) return undefined;
+  return t;
 }
 
 export function findSalonTreatmentById(id: string): SalonTreatment | undefined {
-  const t = SALON_TREATMENTS.find((x) => x.id === id);
+  const t = findCatalogTreatmentById(id);
   if (!t || !isOfferedTreatmentId(t.id)) return undefined;
   return t;
 }
 
 /** Duración mostrada en el panel; si es reserva antigua, devuelve un texto genérico. */
 export function panelDurationLabel(treatmentName: string, category: string): string {
-  const byName = findSalonTreatmentByName(treatmentName);
+  const byName = findCatalogTreatmentByName(treatmentName);
   if (byName) return byName.durationLabel;
   if (category === "Láser") return "45–60 min";
   if (category === "Facial") return "60 min";

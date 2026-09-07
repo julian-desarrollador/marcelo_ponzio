@@ -24,12 +24,12 @@ const SAT_TECH_END_MINUTES = 13 * 60; // 780
  * Estos servicios tienen restricción horaria en Tue-Vie y Sábados.
  */
 const TECHNICAL_TREATMENTS = new Map<string, number>([
-  ["color-essential", 60],
-  ["color-signature", 90],
-  ["color-premium", 120],
+  ["color-essential", 90],
+  ["color-signature", 120],
+  ["color-premium", 150],
   ["balayage-essential", 120],
-  ["balayage-signature", 180],
-  ["balayage-premium", 210],
+  ["balayage-signature", 150],
+  ["balayage-premium", 180],
   ["servicio-completo", 90],       // Servicio completo
   ["color", 60],                   // Color / color con retoque
   ["color-retoque-reflejos", 60],  // Color con retoque de reflejos

@@ -13,7 +13,7 @@ import {
   slotIntervalMs,
   type IntervalMs,
 } from "@/lib/booking/slot-overlap";
-import { findSalonTreatmentById } from "@/lib/treatments/catalog";
+import { findCatalogTreatmentById } from "@/lib/treatments/catalog";
 import type { ReservationDoc } from "@/lib/reservations/types";
 
 const COLLECTION = "reservations";
@@ -60,7 +60,7 @@ export async function computeReprogramDayRows(
     scope: BookingSlotScope;
   },
 ): Promise<ReprogramDayRow[]> {
-  const treatment = findSalonTreatmentById(params.treatmentId.trim());
+  const treatment = findCatalogTreatmentById(params.treatmentId.trim());
   if (!treatment) return [];
 
   let excludeOid: ObjectId | undefined;

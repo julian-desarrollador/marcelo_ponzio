@@ -1,10 +1,8 @@
 /**
  * Paquetes MP Experiences (flyers de Color y Balayage).
  * No se combinan con otros servicios. MP Experiences (marca) no es un ítem de catálogo.
- *
- * Apagado hasta que Marcelo confirme duraciones: el catálogo queda listo.
  */
-export const EXPERIENCE_PACKAGES_ENABLED = false;
+export const EXPERIENCE_PACKAGES_ENABLED = true;
 
 export const COLOR_EXPERIENCE_IDS = [
   "color-essential",
@@ -39,9 +37,12 @@ export function isExperiencePackageId(treatmentId: string): boolean {
   return EXPERIENCE_PACKAGE_IDS.has(treatmentId.trim());
 }
 
-/** false si es un paquete Experience y el flag está apagado. */
+/** false si es un paquete Experience apagado, o Servicio completo (reemplazado por Color Signature). */
 export function isOfferedTreatmentId(treatmentId: string): boolean {
-  if (!isExperiencePackageId(treatmentId)) return true;
+  const id = treatmentId.trim();
+  if (id === "servicio-completo") return false;
+  if (id === "color-signature") return true;
+  if (!isExperiencePackageId(id)) return true;
   return EXPERIENCE_PACKAGES_ENABLED;
 }
 

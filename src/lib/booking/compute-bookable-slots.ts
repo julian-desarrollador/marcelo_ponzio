@@ -13,7 +13,7 @@ import {
 import { marceloWorkUnavailableOnDate } from "@/lib/booking/marcelo-work";
 import { KERATINA_ONLY_TIME_LOCAL, filterPublicSlotsByTreatmentRules } from "@/lib/booking/treatment-slot-rules";
 import { filterSlotsBySalonCapacity, loadBusyIntervalsMs } from "@/lib/booking/slot-overlap";
-import { findSalonTreatmentById } from "@/lib/treatments/catalog";
+import { findCatalogTreatmentById } from "@/lib/treatments/catalog";
 
 export type BookingSlotScope = "public" | "panel";
 
@@ -31,7 +31,7 @@ export async function computeBookableSlots(
     excludeReservationHexId?: string | null;
   },
 ): Promise<string[]> {
-  const treatment = findSalonTreatmentById(params.treatmentId.trim());
+  const treatment = findCatalogTreatmentById(params.treatmentId.trim());
   if (!treatment) return [];
   if (marceloWorkUnavailableOnDate(params.dateKey, [treatment.id])) return [];
 
@@ -86,7 +86,7 @@ export async function computeBookableSlotsForTreatmentIds(
   const ids = params.treatmentIds.map((v) => v.trim()).filter(Boolean);
   if (ids.length === 0) return [];
   const treatments = ids
-    .map((id) => findSalonTreatmentById(id))
+    .map((id) => findCatalogTreatmentById(id))
     .filter((t): t is NonNullable<typeof t> => Boolean(t));
   if (treatments.length !== ids.length) return [];
   if (marceloWorkUnavailableOnDate(params.dateKey, ids)) return [];

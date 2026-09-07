@@ -17,7 +17,7 @@ import {
 } from "@/lib/booking/marcelo-solo-start-gap";
 import { isPublicLeadTimeViolated } from "@/lib/booking/public-slot-lead";
 import { reservationWouldExceedSalonCapacity, slotIntervalMs } from "@/lib/booking/slot-overlap";
-import { findSalonTreatmentById, type SalonTreatment } from "@/lib/treatments/catalog";
+import { findCatalogTreatmentById, findSalonTreatmentById, type SalonTreatment } from "@/lib/treatments/catalog";
 import { exclusivePackageConflictsWithCombo } from "@/lib/treatments/experience-packages";
 
 import { backfillCustomerPhoneDigitsBatch, renormalizeCustomerPhoneDigitsBatch } from "@/lib/reservations/customer-queries";
@@ -570,7 +570,7 @@ export async function rescheduleReservation(
   }
 
   const treatmentId = doc.treatmentId.trim();
-  const catalog = findSalonTreatmentById(treatmentId);
+  const catalog = findCatalogTreatmentById(treatmentId);
   const duration =
     typeof doc.durationMinutes === "number" && Number.isFinite(doc.durationMinutes) && doc.durationMinutes > 0
       ? doc.durationMinutes

@@ -1,8 +1,9 @@
 ﻿"use client";
 
-import { CalendarDays, ChevronRight, Clock3, Percent, Phone, Sparkles } from "lucide-react";
+import { CalendarDays, Check, ChevronRight, Clock3, Percent, Phone, Sparkles, User } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import { TrackedLink } from "@/components/analytics/tracked-link";
 import { usePerfilSession } from "@/components/perfil/perfil-session-provider";
@@ -22,11 +23,26 @@ type MenuItem = {
 };
 
 export function PerfilHomeClient() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { me, welcomeName, reservations, logout, onLoginSuccess } = usePerfilSession();
 
   const [phoneInput, setPhoneInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedToast, setSavedToast] = useState(() => searchParams.get("saved") === "1");
+
+  useEffect(() => {
+    if (searchParams.get("saved") !== "1") return;
+    setSavedToast(true);
+    router.replace("/perfil", { scroll: false });
+  }, [router, searchParams]);
+
+  useEffect(() => {
+    if (!savedToast) return;
+    const t = window.setTimeout(() => setSavedToast(false), 3500);
+    return () => window.clearTimeout(t);
+  }, [savedToast]);
 
   const upcoming = useMemo(
     () =>
@@ -82,6 +98,13 @@ export function PerfilHomeClient() {
 
   const menuItems: MenuItem[] = [
     {
+      href: "/perfil/mis-datos",
+      title: "Mis datos",
+      subtitle: "Nombre y WhatsApp",
+      trackLabel: "mis_datos",
+      Icon: User,
+    },
+    {
       href: "/perfil/mis-turnos",
       title: "Mis turnos",
       subtitle: "Ver, cambiar o cancelar",
@@ -121,6 +144,19 @@ export function PerfilHomeClient() {
 
   return (
     <main className="mx-auto w-full max-w-md px-5 pt-10 pb-28">
+      {savedToast ? (
+        <div className="pointer-events-none fixed inset-x-0 top-4 z-[60] flex justify-center px-5">
+          <div
+            role="status"
+            className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[16px] font-medium text-emerald-900 shadow-lg"
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white">
+              <Check className="h-4 w-4" strokeWidth={2.5} />
+            </span>
+            Datos actualizados.
+          </div>
+        </div>
+      ) : null}
       <header className="mb-6">
         <h1 className="font-heading text-5xl font-bold tracking-tight text-gray-900">Mi perfil</h1>
         {me === "authed" ? (

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { findCustomerDisplayName } from "@/lib/customer/customer-profiles";
 import { isLikelyWhatsappNumber } from "@/lib/booking/salon-availability";
 import { canonicalPhoneDigitsAR, customerPhoneDigitsQueryValues } from "@/lib/customer/phone-canonical-ar";
 import { logCustomerSessionStart, normalizeSessionEventSource } from "@/lib/customer/session-analytics";
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
         { status: 404 },
       );
     }
-    customerName = found.customerName?.trim() || null;
+    customerName = (await findCustomerDisplayName(db, digits)) ?? found.customerName?.trim() ?? null;
   } catch (e) {
     console.error("[api/me/session] db validation", e);
     // Si la DB falla no bloqueamos el login.

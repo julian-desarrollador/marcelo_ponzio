@@ -97,6 +97,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   try {
     const db = await getDb();
     await ensureReservationIndexes(db);
+
     const result = await rescheduleReservation(db, {
       reservationHexId: hex,
       newDateKey: dateKey,

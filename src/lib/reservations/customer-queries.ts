@@ -20,6 +20,44 @@ export async function listReservationsByCustomerPhoneDigits(
     .toArray();
 }
 
+/** Pasa todas las reservas de un WhatsApp a otro (Mis datos). */
+export async function reassignReservationsToPhone(
+  db: Db,
+  fromPhoneDigitsCanonical: string,
+  toPhoneDigitsCanonical: string,
+  toCustomerPhone: string,
+  now: Date,
+): Promise<number> {
+  const fromKeys = customerPhoneDigitsQueryValues(fromPhoneDigitsCanonical);
+  const result = await db.collection<ReservationDoc>(COLLECTION).updateMany(
+    { customerPhoneDigits: { $in: fromKeys } },
+    {
+      $set: {
+        customerPhone: toCustomerPhone.trim(),
+        customerPhoneDigits: toPhoneDigitsCanonical,
+        updatedAt: now,
+      },
+    },
+  );
+  return result.modifiedCount;
+}
+
+/** Hay turnos en `phoneDigitsCanonical` que no pertenecen a `ownerPhoneDigitsCanonical`. */
+export async function phoneHasForeignReservations(
+  db: Db,
+  phoneDigitsCanonical: string,
+  ownerPhoneDigitsCanonical: string,
+): Promise<boolean> {
+  const targetKeys = customerPhoneDigitsQueryValues(phoneDigitsCanonical);
+  const ownerKeys = new Set(customerPhoneDigitsQueryValues(ownerPhoneDigitsCanonical));
+  const rows = await db
+    .collection<ReservationDoc>(COLLECTION)
+    .find({ customerPhoneDigits: { $in: targetKeys } }, { projection: { customerPhoneDigits: 1 } })
+    .limit(50)
+    .toArray();
+  return rows.some((r) => !ownerKeys.has(String(r.customerPhoneDigits ?? "")));
+}
+
 /** Rellena `customerPhoneDigits` en documentos sin el campo (tandas acotadas). */
 export async function backfillCustomerPhoneDigitsBatch(db: Db, batchSize = 250): Promise<number> {
   const col = db.collection<ReservationDoc>(COLLECTION);

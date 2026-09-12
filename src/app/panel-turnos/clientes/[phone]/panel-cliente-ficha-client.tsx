@@ -50,6 +50,11 @@ export function PanelClienteFichaClient({ phoneDigits }: Props) {
   const [draftNote, setDraftNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [nameBusy, setNameBusy] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [nameSaved, setNameSaved] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,6 +76,9 @@ export function PanelClienteFichaClient({ phoneDigits }: Props) {
       }
       setClient(data.client ?? null);
       setVisits(data.visits ?? []);
+      if (data.client?.customerName) {
+        setNameDraft(data.client.customerName);
+      }
     } catch {
       setError("Sin conexión. Probá de nuevo.");
     } finally {
@@ -81,6 +89,12 @@ export function PanelClienteFichaClient({ phoneDigits }: Props) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!nameSaved) return;
+    const t = window.setTimeout(() => setNameSaved(false), 3500);
+    return () => window.clearTimeout(t);
+  }, [nameSaved]);
 
   function startEdit(visit: PanelClientVisit) {
     setEditingId(visit.id);
@@ -124,6 +138,60 @@ export function PanelClienteFichaClient({ phoneDigits }: Props) {
     }
   }
 
+  function startEditName() {
+    if (!client) return;
+    setNameDraft(client.customerName);
+    setNameError(null);
+    setNameSaved(false);
+    setEditingName(true);
+  }
+
+  function cancelEditName() {
+    setEditingName(false);
+    setNameDraft(client?.customerName ?? "");
+    setNameError(null);
+  }
+
+  async function saveName() {
+    if (!client) return;
+    const trimmed = nameDraft.trim();
+    if (trimmed.length < 2) {
+      setNameError("El nombre es demasiado corto.");
+      return;
+    }
+    if (trimmed === client.customerName.trim()) {
+      setEditingName(false);
+      setNameError(null);
+      return;
+    }
+    setNameBusy(true);
+    setNameError(null);
+    setNameSaved(false);
+    try {
+      const res = await fetch(`/api/panel-turnos/clientes/${encodeURIComponent(phoneDigits)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ customerName: trimmed }),
+      });
+      const data = (await res.json()) as { error?: string; customerName?: string };
+      if (!res.ok) {
+        setNameError(data.error ?? "No se pudo guardar el nombre.");
+        return;
+      }
+      const saved = data.customerName?.trim() || trimmed;
+      trackPanelClick("ficha_cambiar_nombre");
+      setClient((prev) => (prev ? { ...prev, customerName: saved } : prev));
+      setNameDraft(saved);
+      setEditingName(false);
+      setNameSaved(true);
+    } catch {
+      setNameError("Sin conexión. Probá de nuevo.");
+    } finally {
+      setNameBusy(false);
+    }
+  }
+
   const waUrl = client ? whatsAppChatUrl(client.customerPhone) : null;
 
   return (
@@ -144,11 +212,75 @@ export function PanelClienteFichaClient({ phoneDigits }: Props) {
               <h1 className="font-montserrat text-[22px] font-bold text-gray-900">Cargando…</h1>
             ) : client ? (
               <>
-                <h1 className="font-montserrat text-[22px] font-bold leading-tight text-gray-900">{client.customerName}</h1>
+                {editingName ? (
+                  <div className="mt-1">
+                    <label htmlFor="ficha-nombre" className={panelLabel}>
+                      Nombre
+                    </label>
+                    <input
+                      id="ficha-nombre"
+                      type="text"
+                      autoComplete="name"
+                      value={nameDraft}
+                      onChange={(e) => {
+                        setNameDraft(e.target.value);
+                        setNameError(null);
+                        setNameSaved(false);
+                      }}
+                      className={panelInput}
+                    />
+                    {nameError ? (
+                      <p role="alert" className="mt-2 text-[13px] text-red-700">
+                        {nameError}
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-[13px] text-gray-500">
+                        Vale para la ficha y para los próximos turnos de este WhatsApp.
+                      </p>
+                    )}
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        disabled={nameBusy}
+                        onClick={() => void saveName()}
+                        className="flex h-10 flex-1 cursor-pointer items-center justify-center rounded-xl bg-[#B88E2F] text-[14px] font-semibold text-white disabled:opacity-50"
+                      >
+                        {nameBusy ? "Guardando…" : "Guardar"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={nameBusy}
+                        onClick={cancelEditName}
+                        className="flex h-10 flex-1 cursor-pointer items-center justify-center rounded-xl border border-gray-200 bg-white text-[14px] font-semibold text-gray-700"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h1 className="font-montserrat text-[22px] font-bold leading-tight text-gray-900">
+                      {client.customerName}
+                    </h1>
+                    <button
+                      type="button"
+                      onClick={startEditName}
+                      className="mt-2 inline-flex cursor-pointer items-center gap-1.5 text-[14px] font-medium text-[#B88E2F] underline-offset-2 hover:underline"
+                    >
+                      <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+                      Editar nombre
+                    </button>
+                  </>
+                )}
                 <p className="mt-1 text-[14px] text-gray-500">{client.customerPhone}</p>
                 <p className="mt-1 text-[13px] text-gray-400">
                   {client.visitCount} {client.visitCount === 1 ? "visita" : "visitas"} registradas
                 </p>
+                {nameSaved ? (
+                  <p role="status" className="mt-2 text-[13px] font-medium text-emerald-800">
+                    Nombre actualizado.
+                  </p>
+                ) : null}
               </>
             ) : (
               <h1 className="font-montserrat text-[22px] font-bold text-gray-900">Clienta</h1>

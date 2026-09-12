@@ -29,6 +29,7 @@ type TurnosClientProps = {
 };
 
 type MeReservationsResponse = {
+  displayName?: string | null;
   reservations?: Array<{
     customerName?: string;
     customerPhone?: string;
@@ -225,24 +226,26 @@ export default function TurnosClient({ initialTreatment = "", initialPromo = "" 
     sessionBootstrappedRef.current = true;
     let cancelled = false;
     let retryTimer: number | null = null;
-    const applyProfileFromReservations = (rows: MeReservationsResponse["reservations"]) => {
-      const list = Array.isArray(rows) ? rows : [];
+    const applyProfileFromReservations = (data: MeReservationsResponse) => {
+      const list = Array.isArray(data.reservations) ? data.reservations : [];
       const latest = [...list]
         .sort((a, b) => String(b.startsAtIso ?? "").localeCompare(String(a.startsAtIso ?? "")))[0];
-      if (latest?.customerName && customerName.trim().length < 2) {
-        setCustomerName(latest.customerName.trim());
+      const fromProfile = data.displayName?.trim() ?? "";
+      const fromLatest = latest?.customerName?.trim() ?? "";
+      const name = fromProfile.length >= 2 ? fromProfile : fromLatest;
+      if (name.length >= 2) {
+        setCustomerName(name);
+        setSessionDisplayName(name);
       }
       if (latest?.customerPhone && !isLikelyWhatsappNumber(customerPhone)) {
         setCustomerPhone(latest.customerPhone.trim());
       }
-      const n = latest?.customerName?.trim();
-      setSessionDisplayName(n && n.length >= 2 ? n : null);
       setSessionStatus("authed");
       try {
         localStorage.setItem(
           CUSTOMER_PROFILE_CACHE_KEY,
           JSON.stringify({
-            name: latest?.customerName?.trim() ?? "",
+            name: name,
             phone: latest?.customerPhone?.trim() ?? "",
           }),
         );
@@ -275,7 +278,7 @@ export default function TurnosClient({ initialTreatment = "", initialPromo = "" 
           return;
         }
         const data = (await res.json()) as MeReservationsResponse;
-        applyProfileFromReservations(data.reservations);
+        applyProfileFromReservations(data);
       } catch {
         if (!cancelled) setSessionStatus("guest");
       }

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { findCustomerDisplayName } from "@/lib/customer/customer-profiles";
 import { logCustomerDailyActive, normalizeActivitySource } from "@/lib/customer/session-analytics";
 import { canonicalPhoneDigitsAR } from "@/lib/customer/phone-canonical-ar";
 import { CUSTOMER_PROFILE_COOKIE, readCustomerProfilePhoneDigits } from "@/lib/customer/customer-session";
@@ -28,9 +29,12 @@ export async function GET(request: Request) {
     await ensureReservationIndexes(db);
     const source = normalizeActivitySource(new URL(request.url).searchParams.get("source"));
     const list = await listReservationsByCustomerPhoneDigits(db, digits);
-    const customerName = list.find((r) => r.customerName?.trim())?.customerName?.trim() ?? null;
+    const profileName = await findCustomerDisplayName(db, digits);
+    const fromReservations = list.find((r) => r.customerName?.trim())?.customerName?.trim() ?? null;
+    const customerName = profileName ?? fromReservations;
     await logCustomerDailyActive(db, { phoneDigits: digits, source, customerName });
     return NextResponse.json({
+      displayName: customerName,
       reservations: list.map(serializeReservationForCustomer),
     });
   } catch (e) {

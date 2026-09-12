@@ -1,6 +1,8 @@
 import type { Db } from "mongodb";
 
+import { argentinaTodayDateKey } from "@/lib/booking/public-slot-lead";
 import { canonicalPhoneDigitsAR, customerPhoneDigitsQueryValues } from "@/lib/customer/phone-canonical-ar";
+import { normalizeDisplayName, upsertCustomerDisplayName } from "@/lib/customer/customer-profiles";
 import { normalizePhoneDigits } from "@/lib/booking/salon-availability";
 
 import type { ReservationDoc } from "./types";
@@ -123,4 +125,39 @@ export async function listReservationsByPhoneDigits(db: Db, phoneDigits: string)
     .find({ customerPhoneDigits: { $in: keys } })
     .sort({ startsAt: -1 })
     .toArray();
+}
+
+/** Nombre de ficha + turnos confirmados/pendientes de hoy y futuros (panel). */
+export async function updateCustomerNameForPhone(
+  db: Db,
+  phoneDigitsCanonical: string,
+  displayName: string,
+  now = new Date(),
+): Promise<{ customerName: string; upcomingUpdated: number } | { error: string; code?: string }> {
+  const name = normalizeDisplayName(displayName);
+  if (!name) {
+    return { error: "El nombre es demasiado corto.", code: "INVALID_NAME" };
+  }
+  const canonical = canonicalPhoneDigitsAR(phoneDigitsCanonical) || phoneDigitsCanonical.trim();
+  if (!canonical || canonical.length < 8) {
+    return { error: "Teléfono inválido.", code: "INVALID_PHONE" };
+  }
+
+  const saved = await upsertCustomerDisplayName(db, canonical, name);
+  if (!saved) {
+    return { error: "El nombre es demasiado corto.", code: "INVALID_NAME" };
+  }
+
+  const keys = customerPhoneDigitsQueryValues(canonical);
+  const todayKey = argentinaTodayDateKey(now);
+  const result = await db.collection<ReservationDoc>(COLLECTION).updateMany(
+    {
+      customerPhoneDigits: { $in: keys },
+      reservationStatus: { $in: ["confirmed", "pending_payment"] },
+      dateKey: { $gte: todayKey },
+    },
+    { $set: { customerName: saved, updatedAt: now } },
+  );
+
+  return { customerName: saved, upcomingUpdated: result.modifiedCount };
 }

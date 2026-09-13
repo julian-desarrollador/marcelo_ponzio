@@ -5,6 +5,8 @@ export const TREATMENT_CATEGORIES = ["Cortes y peinado", "Color", "Tratamiento"]
 
 export type TreatmentCategory = (typeof TREATMENT_CATEGORIES)[number];
 
+// La madrecita
+
 const IMG = {
   corte: "https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=900&q=80",
   peinado: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=900&q=80",

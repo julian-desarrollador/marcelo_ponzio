@@ -7,6 +7,8 @@ import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { resolvePublicSiteOrigin } from "@/lib/site-origin";
 import "./globals.css";
 
+// Prueba de flujo Cursor Cloud (13/09/2026): comentario para comprobar commit, push y PR desde el celular.
+
 const montserrat = Montserrat({
   subsets: ["latin"],
   variable: "--font-montserrat",

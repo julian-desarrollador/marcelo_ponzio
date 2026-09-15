@@ -5,8 +5,10 @@
  *   → No pueden empezar después de las 14:00 (el salón cierra a las 16:00 y Marcelo quiere salir a horario).
  *
  * Trabajos técnicos (sábados):
- *   → Deben TERMINAR a las 13:00 o antes (después trabaja solo peinados).
- *   → El último inicio permitido = 13:00 − duración del servicio (alineado a grilla de 30 min).
+ *   → Se pueden TOMAR (empezar) hasta las 13:00 inclusive.
+ *   → No se resta la duración: un Color Signature de 2 h puede empezar a las 13:00 y terminar a las 15:00.
+ *   → El cierre del salón (16:00) sigue recortando inicios que no entran.
+ *   → Después de las 13:00, cortes/colores no; peinados sí (no son técnicos).
  */
 
 // ─── Horarios de corte ────────────────────────────────────────────────────────
@@ -14,8 +16,8 @@
 /** Último inicio permitido para trabajos técnicos martes-viernes. */
 export const TECH_LATEST_START_TUE_FRI = "14:00";
 
-/** Minutos del día en que terminan los trabajos técnicos los sábados (13:00). */
-const SAT_TECH_END_MINUTES = 13 * 60; // 780
+/** Último inicio permitido para trabajos técnicos los sábados (se toman turnos hasta las 13:00). */
+export const TECH_LATEST_START_SATURDAY = "13:00";
 
 // ─── Tratamientos técnicos (id → durationMinutes) ────────────────────────────
 
@@ -53,25 +55,10 @@ export const KERATINA_ONLY_TIME_LOCAL = "15:00";
 
 // ─── Helpers internos ─────────────────────────────────────────────────────────
 
-function pad2(n: number) {
-  return String(n).padStart(2, "0");
-}
-
 function isSaturday(dateKey: string): boolean {
   const [y, m, d] = dateKey.split("-").map(Number);
   if (!y || !m || !d) return false;
   return new Date(y, m - 1, d).getDay() === 6;
-}
-
-/**
- * Último inicio permitido para un trabajo técnico el sábado,
- * de modo que el servicio termine exactamente a las 13:00 o antes.
- * Devuelve un string "HH:MM" alineado a la grilla de 30 min.
- */
-function saturdayTechLastStart(durationMinutes: number): string {
-  const lastStartMins = Math.floor((SAT_TECH_END_MINUTES - durationMinutes) / 30) * 30;
-  if (lastStartMins <= 0) return "00:00"; // no hay slot disponible
-  return `${pad2(Math.floor(lastStartMins / 60))}:${pad2(lastStartMins % 60)}`;
 }
 
 // ─── API pública ──────────────────────────────────────────────────────────────
@@ -90,7 +77,7 @@ export function treatmentIsKeratinaOnly1530(treatmentId: string): boolean {
  *
  * Reglas aplicadas (por orden de prioridad):
  *  1. Keratina → solo 15:00
- *  2. Trabajo técnico en sábado → slots que terminan antes de las 13:00
+ *  2. Trabajo técnico en sábado → inicio no posterior a las 13:00
  *  3. Trabajo técnico en martes–viernes → inicio no posterior a 14:00
  */
 export function filterPublicSlotsByTreatmentRules(
@@ -105,13 +92,11 @@ export function filterPublicSlotsByTreatmentRules(
     return slots.filter((t) => t === KERATINA_ONLY_TIME_LOCAL);
   }
 
-  const duration = TECHNICAL_TREATMENTS.get(treatmentId);
-  if (duration === undefined) return slots; // no es técnico → sin restricción
+  if (!TECHNICAL_TREATMENTS.has(treatmentId)) return slots; // no es técnico → sin restricción
 
-  // 2. Sábado: el trabajo debe TERMINAR antes de las 13:00
+  // 2. Sábado: se toman turnos hasta las 13:00 (el servicio puede terminar después)
   if (dateKey && isSaturday(dateKey)) {
-    const lastStart = saturdayTechLastStart(duration);
-    return slots.filter((t) => t <= lastStart);
+    return slots.filter((t) => t <= TECH_LATEST_START_SATURDAY);
   }
 
   // 3. Martes–Viernes: inicio no posterior a 14:00

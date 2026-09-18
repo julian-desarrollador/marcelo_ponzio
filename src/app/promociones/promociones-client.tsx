@@ -10,6 +10,16 @@ import { EXPERIENCE_PACKAGES_ENABLED } from "@/lib/treatments/experience-package
 
 const EXPERIENCE_PROMOS = [
   {
+    id: "vacaciones-octubre",
+    title: "Vacaciones",
+    alt: "Marcelo de vacaciones del 10 al 25 de octubre; la peluquería sigue abierta, atiende Lucas.",
+    imageSrc: "/promo/publicidad_marce_vacaciones.jpeg",
+    width: 853,
+    height: 1280,
+    href: "/turnos",
+    cta: "Reservar turno",
+  },
+  {
     id: "mp-experiences",
     title: "MP Experiences",
     alt: "MP Experiences: una experiencia pensada para cada cabello. Productos premium, técnicas personalizadas, resultados naturales.",

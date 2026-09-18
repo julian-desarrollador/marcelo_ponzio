@@ -397,7 +397,7 @@ export function BookingPicker({
                 : "mb-2 rounded-xl border border-[#8a7548]/35 bg-[#fff9ec]/90 px-3 py-2.5 text-center text-[12px] leading-snug text-[#2c241b]"
             }
           >
-            Marcelo no atiende del 14 al 24 de octubre. En esas fechas Lucas sigue con color, peinados y
+            Marcelo no atiende del 10 al 25 de octubre. En esas fechas Lucas sigue con color, peinados y
             tratamientos.
           </p>
         ) : null}
@@ -588,7 +588,7 @@ export function BookingPicker({
                     </p>
                     <p className={`mt-2 text-[16px] ${isLight ? "text-[var(--text-secondary)]" : "text-amber-100/75"}`}>
                       {selectedDateMarceloAway
-                        ? "Del 14 al 24 de octubre no toma cortes, despuntados, servicio completo ni reflejos de papel. Elegí otra fecha, o un servicio de Lucas."
+                        ? "Del 10 al 25 de octubre no toma cortes, despuntados, servicio completo ni reflejos de papel. Elegí otra fecha, o un servicio de Lucas."
                         : isSelectedDateHoliday
                           ? "Elegi otra fecha habilitada para ver turnos disponibles."
                           : "Proba con otra fecha para ver turnos disponibles."}

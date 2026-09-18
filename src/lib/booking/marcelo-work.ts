@@ -14,9 +14,9 @@ export const MARCELO_TREATMENT_IDS = new Set([
   "balayage-premium",
 ]);
 
-/** Último día de trabajo: 13 oct. Ausente inclusive. Vuelve el martes 27. */
-export const MARCELO_AWAY_FROM_DATE_KEY = "2026-10-14";
-export const MARCELO_AWAY_UNTIL_DATE_KEY = "2026-10-24";
+/** Último día de trabajo: viernes 9 oct. Ausente inclusive 10–25. El 26 es lunes (cerrado). Vuelve el martes 27. */
+export const MARCELO_AWAY_FROM_DATE_KEY = "2026-10-10";
+export const MARCELO_AWAY_UNTIL_DATE_KEY = "2026-10-25";
 
 export function isMarceloTreatmentId(treatmentId: string): boolean {
   return MARCELO_TREATMENT_IDS.has(treatmentId.trim());

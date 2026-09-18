@@ -2,8 +2,10 @@
 
 import { TrackedLink } from "@/components/analytics/tracked-link";
 import { DesignUpdateAnnouncement } from "@/components/announcements/design-update-announcement";
+import { VacationAnnouncement } from "@/components/announcements/vacation-announcement";
 import { AppBottomNav } from "@/components/app-bottom-nav";
 import { BrandLogo } from "@/components/brand-logo";
+import { isVacationAnnouncementEligible } from "@/lib/announcements/vacation-oct-2026";
 import { HOME_FEATURED_PROMO } from "@/lib/home-featured-promo";
 import { HOME_HERO_IMAGE_URL } from "@/lib/home-hero-image";
 import { ArrowRight, Percent, Sparkles } from "lucide-react";
@@ -202,7 +204,19 @@ export default function Home() {
   return (
     <>
       <HomeContent />
-      <DesignUpdateAnnouncement scope="/" />
+      <HomeAnnouncements />
     </>
   );
+}
+
+function HomeAnnouncements() {
+  const [showVacation, setShowVacation] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setShowVacation(isVacationAnnouncementEligible());
+  }, []);
+
+  if (showVacation === null) return null;
+  if (showVacation) return <VacationAnnouncement />;
+  return <DesignUpdateAnnouncement scope="/" />;
 }

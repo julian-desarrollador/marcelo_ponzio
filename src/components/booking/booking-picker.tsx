@@ -526,10 +526,10 @@ export function BookingPicker({
           </div>
           )}
 
-          <div className={`grid grid-cols-2 gap-3 ${wizardSection ? "" : "mt-4"}`}>
+          <div className={`grid grid-cols-2 gap-3 ${bookingContext === "panel" ? "md:grid-cols-4" : ""} ${wizardSection ? "" : "mt-4"}`}>
             {slotsLoading ? (
               <div
-                className={`col-span-2 rounded-2xl border px-4 py-6 text-center text-[16px] ${
+                className={`col-span-full rounded-2xl border px-4 py-6 text-center text-[16px] ${
                   isLight
                     ? "border-[var(--border-light)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
                     : "border-white/8 bg-[#171717] text-[var(--soft-gray)]/68"
@@ -561,7 +561,7 @@ export function BookingPicker({
               })
             ) : (
               <div
-                className={`col-span-2 rounded-2xl border px-4 py-6 text-center ${
+                className={`col-span-full rounded-2xl border px-4 py-6 text-center ${
                   selectedDate
                     ? isLight
                       ? "border-amber-300 bg-amber-50"

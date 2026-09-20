@@ -12,8 +12,15 @@ import {
   SALON_TREATMENT_OPTIONS,
   formatSalonDisplayDate,
   isLikelyWhatsappNumber,
+  maskPhoneForPanelDisplay,
 } from "@/lib/booking/salon-availability";
 import { panelDurationLabel } from "@/lib/treatments/catalog";
+
+type PanelClientSuggestion = {
+  phoneDigits: string;
+  customerName: string;
+  customerPhone: string;
+};
 
 export function PanelNuevoTurnoClient() {
   const router = useRouter();
@@ -30,7 +37,14 @@ export function PanelNuevoTurnoClient() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [remoteSlots, setRemoteSlots] = useState<string[] | null | undefined>(undefined);
+  const [recentClients, setRecentClients] = useState<PanelClientSuggestion[]>([]);
+  const [recentClientsLoading, setRecentClientsLoading] = useState(false);
+  const [nameSuggestions, setNameSuggestions] = useState<PanelClientSuggestion[]>([]);
+  const [nameSuggestionsOpen, setNameSuggestionsOpen] = useState(false);
+  const [nameSearchLoading, setNameSearchLoading] = useState(false);
   const bookingFocusRef = useRef<HTMLDivElement | null>(null);
+  const nameSearchAbortRef = useRef<AbortController | null>(null);
+  const skipNameSearchRef = useRef(false);
 
   const selectedTreatment = useMemo(
     () => SALON_TREATMENT_OPTIONS.find((option) => option.id === selectedTreatmentId),
@@ -49,6 +63,90 @@ export function PanelNuevoTurnoClient() {
   );
   const showWhatsappInvalidHint =
     customerPhone.trim().length >= 8 && !isLikelyWhatsappNumber(customerPhone);
+
+  useEffect(() => {
+    if (wizardStep !== 4) return;
+    let cancelled = false;
+    setRecentClientsLoading(true);
+    fetch("/api/panel-turnos/clientes?limit=10", { credentials: "same-origin" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(String(res.status));
+        return res.json() as Promise<{ clients?: PanelClientSuggestion[] }>;
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setRecentClients(Array.isArray(data.clients) ? data.clients : []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setRecentClients([]);
+      })
+      .finally(() => {
+        if (!cancelled) setRecentClientsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [wizardStep]);
+
+  useEffect(() => {
+    if (wizardStep !== 4) return;
+    const q = customerName.trim();
+    if (skipNameSearchRef.current) {
+      skipNameSearchRef.current = false;
+      return;
+    }
+    if (q.length < 2) {
+      nameSearchAbortRef.current?.abort();
+      setNameSuggestions([]);
+      setNameSuggestionsOpen(false);
+      setNameSearchLoading(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      nameSearchAbortRef.current?.abort();
+      const ac = new AbortController();
+      nameSearchAbortRef.current = ac;
+      setNameSearchLoading(true);
+      fetch(`/api/panel-turnos/clientes?q=${encodeURIComponent(q)}&limit=8`, {
+        credentials: "same-origin",
+        signal: ac.signal,
+      })
+        .then(async (res) => {
+          if (!res.ok) throw new Error(String(res.status));
+          return res.json() as Promise<{ clients?: PanelClientSuggestion[] }>;
+        })
+        .then((data) => {
+          const items = Array.isArray(data.clients) ? data.clients : [];
+          setNameSuggestions(items);
+          setNameSuggestionsOpen(items.length > 0);
+        })
+        .catch(() => {
+          if (!ac.signal.aborted) {
+            setNameSuggestions([]);
+            setNameSuggestionsOpen(false);
+          }
+        })
+        .finally(() => {
+          if (!ac.signal.aborted) setNameSearchLoading(false);
+        });
+    }, 280);
+
+    return () => {
+      window.clearTimeout(timer);
+      nameSearchAbortRef.current?.abort();
+    };
+  }, [customerName, wizardStep]);
+
+  const applyPanelClient = useCallback((client: PanelClientSuggestion) => {
+    skipNameSearchRef.current = true;
+    setCustomerName(client.customerName);
+    setCustomerPhone(client.customerPhone);
+    setWhatsappOptIn(true);
+    setNameSuggestions([]);
+    setNameSuggestionsOpen(false);
+  }, []);
 
   useEffect(() => {
     if (!selectedDate || !selectedTreatmentId) {
@@ -173,7 +271,7 @@ export function PanelNuevoTurnoClient() {
     if (wizardStep === 1) return { title: "Nuevo turno", subtitle: "Elegí el servicio" };
     if (wizardStep === 2) return { title: "Elegí la fecha", subtitle: "Seleccioná un día disponible" };
     if (wizardStep === 3) return { title: "Elegí el horario", subtitle: formatSalonDisplayDate(selectedDate) || "Horario disponible" };
-    if (wizardStep === 4) return { title: "Datos del cliente", subtitle: "Para confirmar el turno en agenda" };
+    if (wizardStep === 4) return { title: "Datos del cliente", subtitle: "Recientes o buscá por nombre" };
     return { title: "Confirmar turno", subtitle: "Revisá el resumen antes de guardar" };
   })();
 
@@ -280,41 +378,102 @@ export function PanelNuevoTurnoClient() {
 
       {wizardStep === 4 ? (
         <div className="space-y-4">
-          <div>
-            <label htmlFor="pn-customerName" className="text-[16px] font-semibold text-gray-900">
-              Nombre y apellido
-            </label>
-            <input
-              id="pn-customerName"
-              name="customerName"
-              autoComplete="name"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Como figura en el turno"
-              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3.5 text-[16px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#B88E2F] focus:ring-2 focus:ring-[#B88E2F]/25"
-            />
-          </div>
-          <div>
-            <label htmlFor="pn-customerPhone" className="text-[16px] font-semibold text-gray-900">
-              WhatsApp
-            </label>
-            <input
-              id="pn-customerPhone"
-              name="customerPhone"
-              type="tel"
-              autoComplete="tel"
-              inputMode="tel"
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
-              placeholder="Ej: +54 9 11 2345-6789"
-              aria-invalid={showWhatsappInvalidHint}
-              className={`mt-2 w-full rounded-xl border bg-white px-4 py-3.5 text-[16px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#B88E2F] focus:ring-2 focus:ring-[#B88E2F]/25 ${
-                showWhatsappInvalidHint ? "border-amber-400" : "border-gray-200"
-              }`}
-            />
-            {showWhatsappInvalidHint ? (
-              <p className="mt-2 text-[15px] text-amber-700">Revisá el número: entre 10 y 15 dígitos.</p>
-            ) : null}
+          {recentClientsLoading ? (
+            <p className="text-[14px] text-gray-500">Cargando clientes recientes…</p>
+          ) : recentClients.length > 0 ? (
+            <div>
+              <p className="text-[13px] font-semibold tracking-wide text-gray-500 uppercase">
+                Clientes recientes
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {recentClients.map((client) => (
+                  <button
+                    key={client.phoneDigits}
+                    type="button"
+                    onClick={() => applyPanelClient(client)}
+                    className="cursor-pointer rounded-full border border-[#B88E2F]/35 bg-[#B88E2F]/10 px-3 py-2 text-left text-[13px] font-medium text-gray-800 transition hover:border-[#B88E2F]/55 hover:bg-[#B88E2F]/16 active:scale-[0.98]"
+                  >
+                    <span className="block truncate">{client.customerName}</span>
+                    <span className="mt-0.5 block text-[11px] font-normal text-gray-500">
+                      {maskPhoneForPanelDisplay(client.customerPhone)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="relative">
+              <label htmlFor="pn-customerName" className="text-[16px] font-semibold text-gray-900">
+                Nombre y apellido
+              </label>
+              <input
+                id="pn-customerName"
+                name="customerName"
+                autoComplete="name"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                onFocus={() => {
+                  if (nameSuggestions.length > 0) setNameSuggestionsOpen(true);
+                }}
+                onBlur={() => {
+                  window.setTimeout(() => setNameSuggestionsOpen(false), 150);
+                }}
+                placeholder="Como figura en el turno"
+                className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3.5 text-[16px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#B88E2F] focus:ring-2 focus:ring-[#B88E2F]/25"
+              />
+              {nameSearchLoading ? (
+                <p className="mt-2 text-[13px] text-gray-500">Buscando clientas…</p>
+              ) : null}
+              {nameSuggestionsOpen && nameSuggestions.length > 0 ? (
+                <ul
+                  role="listbox"
+                  aria-label="Sugerencias de clientas"
+                  className="absolute right-0 left-0 z-20 mt-1 max-h-52 overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
+                >
+                  {nameSuggestions.map((client) => (
+                    <li key={client.phoneDigits} role="option">
+                      <button
+                        type="button"
+                        className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-[#B88E2F]/8"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyPanelClient(client)}
+                      >
+                        <span className="min-w-0 truncate text-[15px] font-medium text-gray-900">
+                          {client.customerName}
+                        </span>
+                        <span className="shrink-0 text-[13px] text-gray-500">
+                          {maskPhoneForPanelDisplay(client.customerPhone)}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+            <div>
+              <label htmlFor="pn-customerPhone" className="text-[16px] font-semibold text-gray-900">
+                WhatsApp
+              </label>
+              <input
+                id="pn-customerPhone"
+                name="customerPhone"
+                type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                placeholder="Ej: +54 9 11 2345-6789"
+                aria-invalid={showWhatsappInvalidHint}
+                className={`mt-2 w-full rounded-xl border bg-white px-4 py-3.5 text-[16px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#B88E2F] focus:ring-2 focus:ring-[#B88E2F]/25 ${
+                  showWhatsappInvalidHint ? "border-amber-400" : "border-gray-200"
+                }`}
+              />
+              {showWhatsappInvalidHint ? (
+                <p className="mt-2 text-[15px] text-amber-700">Revisá el número: entre 10 y 15 dígitos.</p>
+              ) : null}
+            </div>
           </div>
           <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-gray-100 bg-[#F5F5F5] px-4 py-4">
             <input

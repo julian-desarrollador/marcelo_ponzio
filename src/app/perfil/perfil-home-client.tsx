@@ -31,6 +31,7 @@ export function PerfilHomeClient() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedToast, setSavedToast] = useState(() => searchParams.get("saved") === "1");
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("saved") !== "1") return;
@@ -91,10 +92,20 @@ export function PerfilHomeClient() {
     setBusy(true);
     try {
       await logout();
+      setLogoutConfirmOpen(false);
     } finally {
       setBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (!logoutConfirmOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape" && !busy) setLogoutConfirmOpen(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [logoutConfirmOpen, busy]);
 
   const menuItems: MenuItem[] = [
     {
@@ -167,7 +178,7 @@ export function PerfilHomeClient() {
             <button
               type="button"
               disabled={busy}
-              onClick={() => void handleLogout()}
+              onClick={() => setLogoutConfirmOpen(true)}
               className="cursor-pointer text-[15px] text-gray-500 underline-offset-2 hover:text-gray-800 hover:underline disabled:opacity-50"
             >
               Cerrar sesión
@@ -298,6 +309,50 @@ export function PerfilHomeClient() {
           ),
         )}
       </section>
+
+      {logoutConfirmOpen ? (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-4"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="logout-confirm-title"
+          aria-describedby="logout-confirm-desc"
+          onClick={() => {
+            if (!busy) setLogoutConfirmOpen(false);
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-[24px] border border-gray-100 bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="logout-confirm-title" className="font-heading text-2xl font-bold text-gray-900">
+              Cerrar sesión
+            </h3>
+            <p id="logout-confirm-desc" className="mt-3 text-[16px] leading-relaxed text-gray-600">
+              ¿Estás seguro/a de que querés cerrar sesión? Para ver tus turnos y datos vas a tener que
+              ingresar tu WhatsApp otra vez. Tus reservas no se cancelan.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setLogoutConfirmOpen(false)}
+                disabled={busy}
+                className="inline-flex h-10 items-center rounded-xl border border-gray-200 px-4 text-[15px] font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-60"
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleLogout()}
+                disabled={busy}
+                className="inline-flex h-10 items-center rounded-xl bg-[#B88E2F] px-4 text-[15px] font-semibold text-white shadow-sm transition hover:bg-[#A37D29] disabled:opacity-60"
+              >
+                {busy ? "Saliendo…" : "Sí, cerrar sesión"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

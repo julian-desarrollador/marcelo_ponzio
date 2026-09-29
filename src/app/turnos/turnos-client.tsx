@@ -590,7 +590,7 @@ export default function TurnosClient({ initialTreatment = "", initialPromo = "" 
       continueLoading={checkoutLoading && wizardStep === 5}
     >
       {sessionStatus === "authed" && sessionDisplayName && wizardStep === 1 ? (
-        <p className="mb-6 text-center text-[16px] text-gray-600">
+        <p className="mb-6 text-center text-[18px] text-gray-600">
           Hola, <span className="font-semibold text-gray-900">{sessionDisplayName}</span>
         </p>
       ) : null}

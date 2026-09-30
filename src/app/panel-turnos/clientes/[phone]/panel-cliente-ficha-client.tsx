@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import type { PanelClientVisit } from "@/lib/panel/client-serialize";
+import { PanelClienteRewards } from "./panel-cliente-rewards";
 import {
   panelBackBtn,
   panelCard,
@@ -21,6 +22,7 @@ type ClientInfo = {
   customerName: string;
   customerPhone: string;
   visitCount: number;
+  birthdayMonthDay?: string | null;
 };
 
 type Props = {
@@ -299,6 +301,15 @@ export function PanelClienteFichaClient({ phoneDigits }: Props) {
             <MessageCircle className="h-4 w-4" strokeWidth={2} />
             Enviar WhatsApp
           </a>
+        ) : null}
+
+        {client && !loading ? (
+          <PanelClienteRewards
+            phoneDigits={client.phoneDigits}
+            customerName={client.customerName}
+            customerPhone={client.customerPhone}
+            birthdayMonthDay={client.birthdayMonthDay ?? null}
+          />
         ) : null}
 
         {loading ? (

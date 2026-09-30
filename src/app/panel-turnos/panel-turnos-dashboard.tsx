@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Gift,
   Lock,
   Plus,
   Users,
@@ -314,6 +315,14 @@ export function PanelTurnosDashboard() {
           >
             <Users className="h-5 w-5 text-[#B88E2F]" strokeWidth={2.2} />
             Clientes
+          </Link>
+          <Link
+            href="/panel-turnos/recompensas"
+            onClick={() => trackPanelClick("recompensas_open")}
+            className="mt-3 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white text-[14px] font-semibold text-gray-800 shadow-sm transition hover:border-[#B88E2F]/30 hover:bg-gray-50"
+          >
+            <Gift className="h-5 w-5 text-[#B88E2F]" strokeWidth={2.2} />
+            Recompensas
           </Link>
         </header>
 

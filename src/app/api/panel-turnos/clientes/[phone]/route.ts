@@ -2,7 +2,8 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { serializePanelClientVisit } from "@/lib/panel/client-serialize";
-import { findCustomerDisplayName } from "@/lib/customer/customer-profiles";
+import { findCustomerDisplayName, findCustomerProfile, setCustomerBirthdayMonthDay } from "@/lib/customer/customer-profiles";
+import { parseBirthdayMonthDay } from "@/lib/rewards/birthday";
 import { canonicalPhoneDigitsAR } from "@/lib/customer/phone-canonical-ar";
 import { getDb } from "@/lib/mongodb";
 import { verifyPanelCookie } from "@/lib/panel-turnos-auth";
@@ -39,13 +40,15 @@ export async function GET(_request: Request, context: { params: Promise<{ phone:
     }
 
     const latest = visits[0];
-    const fromProfile = await findCustomerDisplayName(db, canonical);
+    const profile = await findCustomerProfile(db, canonical);
+    const fromProfile = profile?.displayName?.trim() || null;
     return NextResponse.json({
       client: {
         phoneDigits: latest.customerPhoneDigits ?? canonical,
         customerName: fromProfile || latest.customerName.trim() || "Cliente",
         customerPhone: latest.customerPhone.trim() || canonical,
         visitCount: visits.length,
+        birthdayMonthDay: profile?.birthdayMonthDay?.trim() || null,
       },
       visits: visits.map(serializePanelClientVisit),
     });
@@ -73,10 +76,18 @@ export async function PATCH(request: Request, context: { params: Promise<{ phone
   } catch {
     return NextResponse.json({ error: "Cuerpo inválido." }, { status: 400 });
   }
-  const rawName =
-    typeof body === "object" && body && "customerName" in body
-      ? String((body as { customerName: unknown }).customerName ?? "")
-      : "";
+  const hasName = typeof body === "object" && body !== null && "customerName" in body;
+  const hasBirthday = typeof body === "object" && body !== null && "birthdayMonthDay" in body;
+  const rawName = hasName ? String((body as { customerName: unknown }).customerName ?? "") : "";
+  const birthday = hasBirthday
+    ? parseBirthdayMonthDay((body as { birthdayMonthDay?: unknown }).birthdayMonthDay)
+    : undefined;
+  if (!hasName && !hasBirthday) {
+    return NextResponse.json({ error: "No hay nada para guardar." }, { status: 400 });
+  }
+  if (birthday === "invalid") {
+    return NextResponse.json({ error: "El cumpleaños no es una fecha válida." }, { status: 400 });
+  }
 
   try {
     const db = await getDb();
@@ -86,11 +97,23 @@ export async function PATCH(request: Request, context: { params: Promise<{ phone
       return NextResponse.json({ error: "Clienta no encontrada." }, { status: 404 });
     }
 
-    const result = await updateCustomerNameForPhone(db, canonical, rawName);
-    if ("error" in result) {
-      return NextResponse.json({ error: result.error, code: result.code }, { status: 400 });
+    let customerName = visits[0]?.customerName?.trim() || "Cliente";
+    if (hasName) {
+      const result = await updateCustomerNameForPhone(db, canonical, rawName);
+      if ("error" in result) {
+        return NextResponse.json({ error: result.error, code: result.code }, { status: 400 });
+      }
+      customerName = result.customerName;
     }
-    return NextResponse.json({ ok: true as const, customerName: result.customerName });
+    if (birthday !== undefined) {
+      await setCustomerBirthdayMonthDay(db, canonical, birthday, customerName);
+    }
+    const profile = await findCustomerProfile(db, canonical);
+    return NextResponse.json({
+      ok: true as const,
+      customerName: (await findCustomerDisplayName(db, canonical)) || customerName,
+      birthdayMonthDay: profile?.birthdayMonthDay?.trim() || null,
+    });
   } catch (e) {
     console.error("[api/panel-turnos/clientes/[phone] PATCH]", e);
     return NextResponse.json({ error: "No se pudo guardar el nombre." }, { status: 500 });

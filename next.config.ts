@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: projectRoot,
   },
+  outputFileTracingIncludes: {
+    "/api/panel-turnos/recompensas/gift-cards/[id]/imagen": ["./src/lib/rewards/fonts/**/*"],
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 7,

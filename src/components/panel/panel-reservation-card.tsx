@@ -204,6 +204,12 @@ export const PanelReservationCard = forwardRef<HTMLElement, PanelReservationCard
             <span className="min-w-0">{r.treatmentName}</span>
           </p>
 
+          {r.giftCardTitle ? (
+            <p className={`mt-2 text-[13px] font-semibold ${focused ? "text-[#8B6914]" : "text-[#B88E2F]"}`}>
+              Gift card · {r.giftCardTitle}
+            </p>
+          ) : null}
+
           {r.source === "panel" ? (
             <p className={`mt-2 flex items-center gap-1.5 text-[12px] ${focused ? "text-gray-600" : "text-gray-500"}`}>
               <User className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />

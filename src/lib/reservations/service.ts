@@ -10,6 +10,7 @@ import {
 } from "@/lib/booking/compute-bookable-slots";
 import { formatSalonDisplayDate } from "@/lib/booking/salon-availability";
 import { canonicalPhoneDigitsAR, customerPhoneDigitsQueryValues } from "@/lib/customer/phone-canonical-ar";
+import { releaseGiftCardReservation } from "@/lib/rewards/store";
 import {
   reservationDocRequiresMarceloSoloStartGap,
   reservationWouldViolateMarceloSoloStartGap,
@@ -327,6 +328,9 @@ export async function insertPublicConfirmedReservationWithoutPayment(
     reservationStatus: "confirmed" as const,
     paymentStatus: "not_required" as const,
     source: "app_turnos" as const,
+    ...(input.giftCardCode
+      ? { giftCardCode: input.giftCardCode, giftCardTitle: input.giftCardTitle?.trim() || input.giftCardCode }
+      : {}),
     createdAt: now,
     updatedAt: now,
   } satisfies Omit<
@@ -745,6 +749,9 @@ export async function cancelReservation(
   );
   if (result.modifiedCount !== 1) {
     return { error: "No se pudo cancelar el turno. Probá de nuevo.", code: "CONFLICT" };
+  }
+  if (doc.giftCardCode) {
+    await releaseGiftCardReservation(db, doc.giftCardCode, doc._id.toHexString(), updatedAt);
   }
   return { ok: true as const };
 }

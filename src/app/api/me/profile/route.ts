@@ -5,9 +5,12 @@ import { isLikelyWhatsappNumber } from "@/lib/booking/salon-availability";
 import {
   deleteCustomerProfilesForPhone,
   findCustomerDisplayName,
+  findCustomerProfile,
   normalizeDisplayName,
+  setCustomerBirthdayMonthDay,
   upsertCustomerDisplayName,
 } from "@/lib/customer/customer-profiles";
+import { parseBirthdayMonthDay } from "@/lib/rewards/birthday";
 import { canonicalPhoneDigitsAR } from "@/lib/customer/phone-canonical-ar";
 import {
   CUSTOMER_PROFILE_COOKIE,
@@ -54,7 +57,12 @@ export async function GET() {
     const fromReservations = list.find((r) => r.customerName?.trim())?.customerName?.trim() ?? null;
     const displayName = (await findCustomerDisplayName(db, digits)) ?? fromReservations;
     const customerPhone = list.find((r) => r.customerPhone?.trim())?.customerPhone?.trim() || digits;
-    return NextResponse.json({ displayName, customerPhone });
+    const profile = await findCustomerProfile(db, digits);
+    return NextResponse.json({
+      displayName,
+      customerPhone,
+      birthdayMonthDay: profile?.birthdayMonthDay?.trim() || null,
+    });
   } catch (e) {
     console.error("[api/me/profile GET]", e);
     return NextResponse.json({ error: "No se pudieron cargar tus datos." }, { status: 500 });
@@ -84,6 +92,15 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "El nombre es demasiado corto." }, { status: 400 });
   }
 
+  const hasBirthday =
+    typeof body === "object" && body !== null && "birthdayMonthDay" in body;
+  const birthday = hasBirthday
+    ? parseBirthdayMonthDay((body as { birthdayMonthDay?: unknown }).birthdayMonthDay)
+    : undefined;
+  if (birthday === "invalid") {
+    return NextResponse.json({ error: "El cumpleaños no es una fecha válida." }, { status: 400 });
+  }
+
   const rawPhone =
     typeof body === "object" && body && "customerPhone" in body
       ? String((body as { customerPhone: unknown }).customerPhone ?? "").trim()
@@ -92,13 +109,23 @@ export async function PATCH(request: Request) {
   try {
     const db = await getDb();
     const now = new Date();
+    const previous = await findCustomerProfile(db, digits);
+    const birthdayToSave =
+      birthday !== undefined ? birthday : previous?.birthdayMonthDay?.trim() || null;
 
     if (!rawPhone) {
       const saved = await upsertCustomerDisplayName(db, digits, name);
       if (!saved) {
         return NextResponse.json({ error: "El nombre es demasiado corto." }, { status: 400 });
       }
-      return NextResponse.json({ ok: true as const, displayName: saved, customerPhone: null, phoneChanged: false });
+      if (birthday !== undefined) await setCustomerBirthdayMonthDay(db, digits, birthday, saved);
+      return NextResponse.json({
+        ok: true as const,
+        displayName: saved,
+        customerPhone: null,
+        phoneChanged: false,
+        birthdayMonthDay: birthday !== undefined ? birthday : previous?.birthdayMonthDay?.trim() || null,
+      });
     }
 
     if (!isLikelyWhatsappNumber(rawPhone)) {
@@ -115,11 +142,13 @@ export async function PATCH(request: Request) {
       if (!saved) {
         return NextResponse.json({ error: "El nombre es demasiado corto." }, { status: 400 });
       }
+      if (birthday !== undefined) await setCustomerBirthdayMonthDay(db, digits, birthday, saved);
       return NextResponse.json({
         ok: true as const,
         displayName: saved,
         customerPhone: rawPhone,
         phoneChanged: false,
+        birthdayMonthDay: birthday !== undefined ? birthday : previous?.birthdayMonthDay?.trim() || null,
       });
     }
 
@@ -146,6 +175,7 @@ export async function PATCH(request: Request) {
     await reassignReservationsToPhone(db, digits, newDigits, rawPhone, now);
     await deleteCustomerProfilesForPhone(db, digits);
     const saved = (await upsertCustomerDisplayName(db, newDigits, name)) ?? name;
+    if (birthdayToSave) await setCustomerBirthdayMonthDay(db, newDigits, birthdayToSave, saved);
     setSessionCookie(cookieStore, newDigits);
 
     return NextResponse.json({
@@ -153,6 +183,7 @@ export async function PATCH(request: Request) {
       displayName: saved,
       customerPhone: rawPhone,
       phoneChanged: true,
+      birthdayMonthDay: birthdayToSave,
     });
   } catch (e) {
     console.error("[api/me/profile PATCH]", e);

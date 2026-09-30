@@ -16,6 +16,8 @@ export function MisDatosClient() {
   const [phoneInput, setPhoneInput] = useState("");
   const [initialName, setInitialName] = useState("");
   const [initialPhone, setInitialPhone] = useState("");
+  const [birthdayInput, setBirthdayInput] = useState("");
+  const [initialBirthday, setInitialBirthday] = useState("");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,13 +44,20 @@ export function MisDatosClient() {
           setLoading(false);
           return;
         }
-        const data = (await res.json()) as { displayName?: string | null; customerPhone?: string };
+        const data = (await res.json()) as {
+          displayName?: string | null;
+          customerPhone?: string;
+          birthdayMonthDay?: string | null;
+        };
         const name = data.displayName?.trim() || welcomeName || "";
         const phone = data.customerPhone?.trim() || "";
+        const birthday = data.birthdayMonthDay?.trim() || "";
         setNameInput(name);
         setInitialName(name);
         setPhoneInput(phone);
         setInitialPhone(phone);
+        setBirthdayInput(birthday);
+        setInitialBirthday(birthday);
       } catch {
         if (!cancelled) {
           setNameInput(welcomeName ?? "");
@@ -83,7 +92,7 @@ export function MisDatosClient() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ displayName: name, customerPhone: phone }),
+        body: JSON.stringify({ displayName: name, customerPhone: phone, birthdayMonthDay: birthdayInput }),
       });
       const data = (await res.json()) as {
         error?: string;
@@ -98,6 +107,7 @@ export function MisDatosClient() {
       const savedName = data.displayName?.trim() || name;
       const savedPhone = data.customerPhone?.trim() || phone;
       setDisplayName(savedName, savedPhone);
+      setInitialBirthday(birthdayInput);
       if (data.phoneChanged) {
         await reload();
       }
@@ -112,11 +122,13 @@ export function MisDatosClient() {
   const dirty =
     nameInput.trim().length >= 2 &&
     isLikelyWhatsappNumber(phoneInput) &&
-    (nameInput.trim() !== initialName.trim() || phoneInput.trim() !== initialPhone.trim());
+    (nameInput.trim() !== initialName.trim() ||
+      phoneInput.trim() !== initialPhone.trim() ||
+      birthdayInput !== initialBirthday);
 
   return (
     <main className="mx-auto w-full max-w-md px-5 pt-8 pb-28">
-      <LightPageHeader title="Mis datos" subtitle="Nombre y WhatsApp de tu cuenta" backHref="/perfil" backLabel="Volver al perfil" />
+      <LightPageHeader title="Mis datos" subtitle="Nombre, WhatsApp y cumpleaños" backHref="/perfil" backLabel="Volver al perfil" />
 
       {me === "guest" ? (
         <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[16px] text-amber-900">
@@ -173,6 +185,27 @@ export function MisDatosClient() {
               placeholder="Ej: +54 9 11 2345-6789"
               className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3.5 text-[16px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#B88E2F] focus:ring-2 focus:ring-[#B88E2F]/25"
             />
+          </div>
+
+          <div>
+            <label htmlFor="mis-datos-cumple" className="text-[16px] font-semibold text-gray-900">
+              Cumpleaños
+            </label>
+            <input
+              id="mis-datos-cumple"
+              name="birthday"
+              type="date"
+              value={birthdayInput ? `2000-${birthdayInput}` : ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                setBirthdayInput(value.length >= 10 ? value.slice(5) : "");
+                setError(null);
+              }}
+              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3.5 text-[16px] text-gray-900 outline-none focus:border-[#B88E2F] focus:ring-2 focus:ring-[#B88E2F]/25"
+            />
+            <p className="mt-2 text-[14px] leading-snug text-gray-500">
+              Opcional. Solo día y mes, para el regalo de cumpleaños. No guardamos el año.
+            </p>
           </div>
 
           {error ? (

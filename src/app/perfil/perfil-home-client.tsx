@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { CalendarDays, Check, ChevronRight, Clock3, Percent, Phone, Sparkles, User } from "lucide-react";
+import { CalendarDays, Check, ChevronRight, Clock3, Gift, Percent, Phone, Sparkles, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -122,6 +122,13 @@ export function PerfilHomeClient() {
       trackLabel: "mis_turnos",
       Icon: CalendarDays,
       badge: me === "authed" ? String(upcoming.length) : undefined,
+    },
+    {
+      href: "/perfil/gift-cards",
+      title: "Mis gift cards",
+      subtitle: "Regalos y promos para usar",
+      trackLabel: "gift_cards",
+      Icon: Gift,
     },
     {
       href: "/perfil/historial-tratamientos",

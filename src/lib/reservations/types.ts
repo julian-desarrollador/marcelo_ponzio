@@ -58,6 +58,9 @@ export type ReservationDoc = {
   panelNotes?: string | null;
   /** Ficha técnica de la visita (panel): fórmulas, detalles del servicio, etc. */
   technicalNote?: string | null;
+  /** Gift card canjeada en este turno, si hubo. */
+  giftCardCode?: string | null;
+  giftCardTitle?: string | null;
   createdAt: Date;
   updatedAt: Date;
   /** Secreto de un solo uso para crear la preferencia Checkout Pro (no es password del usuario). */
@@ -92,6 +95,8 @@ export type CreateReservationInput = {
   whatsappOptIn: boolean;
   /** Combo de servicios (v1: 1 a 3). Si no viene, usa `treatmentId` simple. */
   serviceIds?: string[];
+  giftCardCode?: string;
+  giftCardTitle?: string;
 };
 
 /** Auditoría de notificaciones Mercado Pago (webhook / IPN). */

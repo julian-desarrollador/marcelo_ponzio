@@ -19,6 +19,8 @@ export type PanelReservation = {
   waReminder24hSentAt?: string | null;
   /** ISO: confirmó asistencia respondiendo el recordatorio. */
   waAttendanceConfirmedAt?: string | null;
+  giftCardCode?: string | null;
+  giftCardTitle?: string | null;
 };
 
 export type PanelAgendaBlock = {

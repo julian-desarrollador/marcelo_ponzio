@@ -53,6 +53,8 @@ function serialize(r: ReservationDoc) {
         : r.waAttendanceConfirmedAt
           ? String(r.waAttendanceConfirmedAt)
           : null,
+    giftCardTitle: r.giftCardTitle?.trim() || null,
+    giftCardCode: r.giftCardCode?.trim() || null,
   };
 }
 

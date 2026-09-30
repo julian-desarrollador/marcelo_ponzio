@@ -26,6 +26,7 @@ import {
 type TurnosClientProps = {
   initialTreatment?: string;
   initialPromo?: string;
+  initialGiftCard?: string;
 };
 
 type MeReservationsResponse = {
@@ -38,7 +39,28 @@ type MeReservationsResponse = {
 };
 const CUSTOMER_PROFILE_CACHE_KEY = "mp_customer_profile_cache";
 
-export default function TurnosClient({ initialTreatment = "", initialPromo = "" }: TurnosClientProps) {
+type MyGiftCard = {
+  code: string;
+  title: string;
+  description: string;
+  treatmentIds: string[];
+  status: string;
+  expiresAt: string;
+};
+
+function giftCardFitsServices(card: MyGiftCard, serviceIds: string[]): boolean {
+  if (card.status !== "active") return false;
+  if (new Date(card.expiresAt).getTime() <= Date.now()) return false;
+  if (serviceIds.length === 0) return false;
+  if (card.treatmentIds.length === 0) return true;
+  return serviceIds.every((id) => card.treatmentIds.includes(id));
+}
+
+export default function TurnosClient({
+  initialTreatment = "",
+  initialPromo = "",
+  initialGiftCard = "",
+}: TurnosClientProps) {
   const router = useRouter();
   const treatmentParam = (() => {
     try {
@@ -68,6 +90,8 @@ export default function TurnosClient({ initialTreatment = "", initialPromo = "" 
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [sessionStatus, setSessionStatus] = useState<"unknown" | "guest" | "authed">("unknown");
   const [sessionDisplayName, setSessionDisplayName] = useState<string | null>(null);
+  const [myGiftCards, setMyGiftCards] = useState<MyGiftCard[]>([]);
+  const [selectedGiftCardCode, setSelectedGiftCardCode] = useState(initialGiftCard.trim().toUpperCase());
   /** Horarios con solapes resueltos en servidor; `undefined` = no aplica, `null` = cargando. */
   const [remoteSlots, setRemoteSlots] = useState<string[] | null | undefined>(undefined);
   const bookingFocusRef = useRef<HTMLDivElement | null>(null);
@@ -117,6 +141,13 @@ export default function TurnosClient({ initialTreatment = "", initialPromo = "" 
   const primaryService = selectedServices[0];
 
   const requiresDeposit = selectedServices.some((s) => treatmentRequiresPublicDeposit(s.id));
+  const selectedGiftCard = myGiftCards.find((card) => card.code === selectedGiftCardCode) ?? null;
+  const giftCardFits = selectedGiftCard ? giftCardFitsServices(selectedGiftCard, selectedServiceIds) : false;
+  const payWithGiftCard = Boolean(selectedGiftCard && giftCardFits);
+  const checkoutNeedsDeposit = requiresDeposit && !payWithGiftCard;
+  const usableGiftCards = myGiftCards.filter(
+    (card) => card.status === "active" && new Date(card.expiresAt).getTime() > Date.now(),
+  );
 
   const hasSlot = Boolean(selectedServices.length > 0 && selectedDate && selectedTime);
   const datosComplete = Boolean(
@@ -220,6 +251,24 @@ export default function TurnosClient({ initialTreatment = "", initialPromo = "" 
       // ignore invalid local cache
     }
   }, []);
+
+  useEffect(() => {
+    if (sessionStatus !== "authed") return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/me/gift-cards", { credentials: "same-origin", cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { giftCards?: MyGiftCard[] };
+        if (!cancelled) setMyGiftCards(data.giftCards ?? []);
+      } catch {
+        // sin gift cards si no hay sesión
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionStatus]);
 
   useEffect(() => {
     if (sessionBootstrappedRef.current) return;
@@ -401,6 +450,7 @@ export default function TurnosClient({ initialTreatment = "", initialPromo = "" 
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
         whatsappOptIn,
+        ...(payWithGiftCard && selectedGiftCard ? { giftCardCode: selectedGiftCard.code } : {}),
       };
       const resPending = await fetch("/api/reservations/pending", {
         method: "POST",
@@ -505,8 +555,9 @@ export default function TurnosClient({ initialTreatment = "", initialPromo = "" 
   const wizardContinueLabel = (() => {
     if (wizardStep === 1) return `Continuar (${selectedServiceIds.length})`;
     if (wizardStep === 5) {
-      if (checkoutLoading) return requiresDeposit ? "Preparando pago…" : "Confirmando…";
-      return requiresDeposit ? "Pagar seña con Mercado Pago" : "Confirmar reserva";
+      if (checkoutLoading) return checkoutNeedsDeposit ? "Preparando pago…" : "Confirmando…";
+      if (payWithGiftCard) return "Confirmar con gift card";
+      return checkoutNeedsDeposit ? "Pagar seña con Mercado Pago" : "Confirmar reserva";
     }
     return "Continuar";
   })();
@@ -729,10 +780,46 @@ export default function TurnosClient({ initialTreatment = "", initialPromo = "" 
               ) : null}
             </dl>
           </div>
+          {usableGiftCards.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-sm font-semibold tracking-wide text-[#B88E2F] uppercase">Usar gift card</p>
+              <button
+                type="button"
+                onClick={() => setSelectedGiftCardCode("")}
+                className={`flex w-full cursor-pointer rounded-2xl border px-4 py-3 text-left text-[15px] ${
+                  selectedGiftCardCode ? "border-gray-200 bg-white text-gray-700" : "border-[#B88E2F] bg-[#B88E2F]/10 text-gray-900"
+                }`}
+              >
+                Sin gift card
+              </button>
+              {usableGiftCards.map((card) => {
+                const selected = card.code === selectedGiftCardCode;
+                const fits = giftCardFitsServices(card, selectedServiceIds);
+                return (
+                  <button
+                    key={card.code}
+                    type="button"
+                    onClick={() => setSelectedGiftCardCode(card.code)}
+                    className={`w-full cursor-pointer rounded-2xl border px-4 py-3 text-left ${
+                      selected ? "border-[#B88E2F] bg-[#111111] text-white" : "border-gray-200 bg-white text-gray-900"
+                    }`}
+                  >
+                    <span className="block text-[16px] font-semibold">{card.title}</span>
+                    <span className={`mt-1 block text-[13px] ${selected ? "text-white/70" : "text-gray-500"}`}>
+                      {card.code}
+                      {fits ? "" : " · no aplica a estos servicios"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
           <p className="text-[16px] leading-relaxed text-gray-600">
-            {requiresDeposit
-              ? "El turno se confirma cuando Mercado Pago acredita la seña."
-              : "Al confirmar, el turno queda agendado y te enviamos recordatorio por WhatsApp."}
+            {payWithGiftCard
+              ? "Con la gift card no se paga seña. El beneficio se aplica en el salón."
+              : checkoutNeedsDeposit
+                ? "El turno se confirma cuando Mercado Pago acredita la seña."
+                : "Al confirmar, el turno queda agendado y te enviamos recordatorio por WhatsApp."}
           </p>
           {confirmError ? (
             <p role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-center text-[16px] text-red-800">

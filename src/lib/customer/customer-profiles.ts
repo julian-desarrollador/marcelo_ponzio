@@ -7,6 +7,8 @@ export const CUSTOMER_PROFILES_COLLECTION = "customer_profiles";
 export type CustomerProfileDoc = {
   phoneDigits: string;
   displayName: string;
+  /** Día y mes, "MM-DD". Sin año. */
+  birthdayMonthDay?: string | null;
   updatedAt: Date;
 };
 
@@ -32,15 +34,19 @@ export async function ensureCustomerProfileIndexes(db: Db): Promise<void> {
   indexesEnsured = true;
 }
 
-export async function findCustomerDisplayName(db: Db, phoneDigitsCanonical: string): Promise<string | null> {
+export async function findCustomerProfile(
+  db: Db,
+  phoneDigitsCanonical: string,
+): Promise<CustomerProfileDoc | null> {
   const canonical = phoneDigitsCanonical.trim();
   if (!canonical) return null;
   await ensureCustomerProfileIndexes(db);
   const keys = customerPhoneDigitsQueryValues(canonical);
-  const row = await db.collection<CustomerProfileDoc>(CUSTOMER_PROFILES_COLLECTION).findOne(
-    { phoneDigits: { $in: keys } },
-    { projection: { displayName: 1 } },
-  );
+  return db.collection<CustomerProfileDoc>(CUSTOMER_PROFILES_COLLECTION).findOne({ phoneDigits: { $in: keys } });
+}
+
+export async function findCustomerDisplayName(db: Db, phoneDigitsCanonical: string): Promise<string | null> {
+  const row = await findCustomerProfile(db, phoneDigitsCanonical);
   const name = row?.displayName?.trim();
   return name && name.length >= 2 ? name : null;
 }
@@ -61,6 +67,27 @@ export async function upsertCustomerDisplayName(
     { upsert: true },
   );
   return name;
+}
+
+export async function setCustomerBirthdayMonthDay(
+  db: Db,
+  phoneDigitsCanonical: string,
+  birthdayMonthDay: string | null,
+  fallbackName?: string,
+): Promise<void> {
+  const canonical = phoneDigitsCanonical.trim();
+  if (!canonical) return;
+  await ensureCustomerProfileIndexes(db);
+  const now = new Date();
+  const name = normalizeDisplayName(fallbackName ?? "") ?? "Cliente";
+  await db.collection<CustomerProfileDoc>(CUSTOMER_PROFILES_COLLECTION).updateOne(
+    { phoneDigits: canonical },
+    {
+      $set: { birthdayMonthDay, updatedAt: now },
+      $setOnInsert: { phoneDigits: canonical, displayName: name },
+    },
+    { upsert: true },
+  );
 }
 
 /** Borra fichas de un WhatsApp (todas las variantes canónicas) para moverlas a otro número. */

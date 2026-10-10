@@ -10,7 +10,7 @@ import {
   loadMarceloSoloStartMs,
   treatmentIdsRequireMarceloSoloStartGap,
 } from "@/lib/booking/marcelo-solo-start-gap";
-import { marceloWorkUnavailableOnDate } from "@/lib/booking/marcelo-work";
+import { isMarceloAwayDateKey, marceloWorkUnavailableOnDate } from "@/lib/booking/marcelo-work";
 import { KERATINA_ONLY_TIME_LOCAL, filterPublicSlotsByTreatmentRules } from "@/lib/booking/treatment-slot-rules";
 import { filterSlotsBySalonCapacity, loadBusyIntervalsMs } from "@/lib/booking/slot-overlap";
 import { findCatalogTreatmentById } from "@/lib/treatments/catalog";
@@ -108,8 +108,10 @@ export async function computeBookableSlotsForTreatmentIds(
       : getAvailableTimesForDate(params.dateKey);
   slots = filterSlotsServiceEndsOnOrBeforeClose(slots, totalDuration);
   const keratinaIdx = treatments.findIndex((t) => t.id === "keratina");
-  if (params.scope === "public" && keratinaIdx >= 0) {
+  const keratinaPinnedTo1500 = keratinaIdx >= 0 && !isMarceloAwayDateKey(params.dateKey);
+  if (params.scope === "public" && keratinaPinnedTo1500) {
     // En combos públicos, keratina debe quedar al final y empezar a las 15:00.
+    // Del 10 al 25 de octubre no se fija la hora: la hace el equipo.
     if (keratinaIdx !== treatments.length - 1) return [];
     const beforeDuration = treatments.slice(0, keratinaIdx).reduce((acc, t) => acc + t.durationMinutes, 0);
     const [h, m] = KERATINA_ONLY_TIME_LOCAL.split(":").map(Number);
@@ -125,6 +127,7 @@ export async function computeBookableSlotsForTreatmentIds(
       slots = filterPublicSlotsByTreatmentRules(t.id, slots, params.dateKey);
     }
   } else {
+    if (params.scope === "public" && keratinaIdx >= 0 && keratinaIdx !== treatments.length - 1) return [];
     for (const t of treatments) {
       slots = filterPublicSlotsByTreatmentRules(t.id, slots, params.dateKey);
     }

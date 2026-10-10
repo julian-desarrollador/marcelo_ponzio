@@ -1,3 +1,5 @@
+import { isMarceloAwayDateKey } from "@/lib/booking/marcelo-work";
+
 /**
  * Reglas de agenda indicadas por el salón.
  *
@@ -76,7 +78,7 @@ export function treatmentIsKeratinaOnly1530(treatmentId: string): boolean {
  * Pasar `dateKey` para aplicar las restricciones del sábado.
  *
  * Reglas aplicadas (por orden de prioridad):
- *  1. Keratina → solo 15:00
+ *  1. Keratina → solo 15:00, salvo del 10 al 25 de octubre (la hace el equipo)
  *  2. Trabajo técnico en sábado → inicio no posterior a las 13:00
  *  3. Trabajo técnico en martes–viernes → inicio no posterior a 14:00
  */
@@ -87,8 +89,9 @@ export function filterPublicSlotsByTreatmentRules(
 ): string[] {
   if (!treatmentId) return slots;
 
-  // 1. Keratina: único horario fijo
+  // 1. Keratina: único horario fijo, excepto mientras Marcelo está de viaje.
   if (treatmentIsKeratinaOnly1530(treatmentId)) {
+    if (dateKey && isMarceloAwayDateKey(dateKey)) return slots;
     return slots.filter((t) => t === KERATINA_ONLY_TIME_LOCAL);
   }
 

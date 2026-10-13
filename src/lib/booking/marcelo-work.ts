@@ -1,18 +1,9 @@
 /**
- * Quién hace cada servicio (confirmado por Marcelo, sep 2026).
- * Lucas hace todo lo que no está en esta lista.
+ * Servicios que solo hace Marcelo. Vacía desde oct 2026: Lucas puede hacer todo,
+ * también durante el viaje del 10 al 25. Las fechas de ausencia siguen en las
+ * constantes de abajo (aviso de vacaciones), no para sacar cupos.
  */
-export const MARCELO_TREATMENT_IDS = new Set([
-  "corte-dama",
-  "despuntado",
-  "servicio-completo",
-  "reflejos-papel-retoque",
-  "reflejos-papel-completo",
-  "color-signature",
-  "color-premium",
-  "balayage-signature",
-  "balayage-premium",
-]);
+export const MARCELO_TREATMENT_IDS = new Set<string>([]);
 
 /** Último día de trabajo: viernes 9 oct. Ausente inclusive 10–25. El 26 es lunes (cerrado). Vuelve el martes 27. */
 export const MARCELO_AWAY_FROM_DATE_KEY = "2026-10-10";
@@ -30,7 +21,7 @@ export function isMarceloAwayDateKey(dateKey: string): boolean {
   return dateKey >= MARCELO_AWAY_FROM_DATE_KEY && dateKey <= MARCELO_AWAY_UNTIL_DATE_KEY;
 }
 
-/** Si el turno incluye un trabajo de Marcelo en una fecha de viaje, no hay cupo. */
+/** Si el turno incluye un trabajo solo de Marcelo en una fecha de viaje, no hay cupo. Hoy la lista está vacía. */
 export function marceloWorkUnavailableOnDate(dateKey: string, treatmentIds: string[]): boolean {
   return isMarceloAwayDateKey(dateKey) && treatmentIdsIncludeMarceloWork(treatmentIds);
 }

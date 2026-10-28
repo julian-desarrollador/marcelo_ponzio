@@ -4,7 +4,7 @@ import { isMarceloAwayDateKey } from "@/lib/booking/marcelo-work";
  * Reglas de agenda indicadas por el salón.
  *
  * Trabajos técnicos (martes a viernes):
- *   → No pueden empezar después de las 14:00 (el salón cierra a las 16:00 y Marcelo quiere salir a horario).
+ *   → No pueden empezar después de las 14:30 (el salón cierra a las 16:00 y Marcelo quiere salir a horario).
  *
  * Trabajos técnicos (sábados):
  *   → Se pueden TOMAR (empezar) hasta las 13:00 inclusive.
@@ -16,7 +16,7 @@ import { isMarceloAwayDateKey } from "@/lib/booking/marcelo-work";
 // ─── Horarios de corte ────────────────────────────────────────────────────────
 
 /** Último inicio permitido para trabajos técnicos martes-viernes. */
-export const TECH_LATEST_START_TUE_FRI = "14:00";
+export const TECH_LATEST_START_TUE_FRI = "14:30";
 
 /** Último inicio permitido para trabajos técnicos los sábados (se toman turnos hasta las 13:00). */
 export const TECH_LATEST_START_SATURDAY = "13:00";
@@ -80,7 +80,7 @@ export function treatmentIsKeratinaOnly1530(treatmentId: string): boolean {
  * Reglas aplicadas (por orden de prioridad):
  *  1. Keratina → solo 15:00, salvo del 10 al 25 de octubre (la hace el equipo)
  *  2. Trabajo técnico en sábado → inicio no posterior a las 13:00
- *  3. Trabajo técnico en martes–viernes → inicio no posterior a 14:00
+ *  3. Trabajo técnico en martes–viernes → inicio no posterior a 14:30
  */
 export function filterPublicSlotsByTreatmentRules(
   treatmentId: string | undefined,
@@ -102,7 +102,7 @@ export function filterPublicSlotsByTreatmentRules(
     return slots.filter((t) => t <= TECH_LATEST_START_SATURDAY);
   }
 
-  // 3. Martes–Viernes: inicio no posterior a 14:00
+  // 3. Martes–Viernes: inicio no posterior a 14:30
   return slots.filter((t) => t <= TECH_LATEST_START_TUE_FRI);
 }
 

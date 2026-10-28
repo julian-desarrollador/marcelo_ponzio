@@ -184,6 +184,18 @@ export const SALON_TREATMENTS: SalonTreatment[] = [
     imageUrl: IMG.peinado,
   },
   {
+    id: "beauty-party",
+    name: "Beauty Party",
+    subtitle: "Maquillaje y peinado de fiesta · 2 h",
+    description:
+      "Maquillaje profesional y peinado de fiesta. Experiencia completa para fiestas, eventos y celebraciones.",
+    category: "Cortes y peinado",
+    durationLabel: "2 h",
+    durationMinutes: 120,
+    imageUrl: IMG.peinado,
+    priceLabel: "$160.000",
+  },
+  {
     id: "color",
     name: "Color",
     subtitle: "1 h",

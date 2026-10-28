@@ -1,10 +1,12 @@
 "use client";
 
 import { TrackedLink } from "@/components/analytics/tracked-link";
+import { BeautyPartyAnnouncement } from "@/components/announcements/beauty-party-announcement";
 import { DesignUpdateAnnouncement } from "@/components/announcements/design-update-announcement";
 import { VacationAnnouncement } from "@/components/announcements/vacation-announcement";
 import { AppBottomNav } from "@/components/app-bottom-nav";
 import { BrandLogo } from "@/components/brand-logo";
+import { hasSeenBeautyPartyAnnouncement } from "@/lib/announcements/beauty-party";
 import { isVacationAnnouncementEligible } from "@/lib/announcements/vacation-oct-2026";
 import { HOME_FEATURED_PROMO } from "@/lib/home-featured-promo";
 import { HOME_HERO_IMAGE_URL } from "@/lib/home-hero-image";
@@ -210,13 +212,22 @@ export default function Home() {
 }
 
 function HomeAnnouncements() {
-  const [showVacation, setShowVacation] = useState<boolean | null>(null);
+  const [kind, setKind] = useState<"vacation" | "beauty-party" | "design" | null>(null);
 
   useEffect(() => {
-    setShowVacation(isVacationAnnouncementEligible());
+    if (isVacationAnnouncementEligible()) {
+      setKind("vacation");
+      return;
+    }
+    if (!hasSeenBeautyPartyAnnouncement()) {
+      setKind("beauty-party");
+      return;
+    }
+    setKind("design");
   }, []);
 
-  if (showVacation === null) return null;
-  if (showVacation) return <VacationAnnouncement />;
+  if (kind === null) return null;
+  if (kind === "vacation") return <VacationAnnouncement />;
+  if (kind === "beauty-party") return <BeautyPartyAnnouncement />;
   return <DesignUpdateAnnouncement scope="/" />;
 }

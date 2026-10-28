@@ -24,6 +24,7 @@ export const EXPERIENCE_PACKAGE_IDS = new Set<string>([
 /** Paquetes que ocupan el turno entero (incluye Servicio completo). */
 export const EXCLUSIVE_PACKAGE_IDS = new Set<string>([
   "servicio-completo",
+  "beauty-party",
   ...EXPERIENCE_PACKAGE_IDS,
 ]);
 
